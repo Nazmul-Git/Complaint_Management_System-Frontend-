@@ -3,21 +3,44 @@ const db = require('../config/db');
 // Get all tickets
 const getAllTickets = (req, res) => {
     const { role, id } = req.user;
+    const { status, executive, search } = req.query;
 
+    // Base query
     let query = 'SELECT * FROM Tickets';
-    if (role === 'customer') {
-        query += ' WHERE customer_id = ?';
+    const params = [];
+
+    // Add filters based on query parameters
+    if (status) {
+        if (role === 'customer') {
+            query += ' AND status = ?';
+        } else {
+            query += ' WHERE status = ?';
+        }
+        params.push(status);
     }
 
-    db.query(query, [role === 'customer' ? id : null], (err, results) => {
-        if (err) throw err;
+    // Add search functionality for subject or description
+    if (search) {
+        if (params.length > 0) {
+            query += ' AND (subject LIKE ? OR description LIKE ?)';
+        } else {
+            query += ' WHERE (subject LIKE ? OR description LIKE ?)';
+        }
+        params.push(`%${search}%`, `%${search}%`);
+    }
+
+    // Execute the query
+    db.query(query, params, (err, results) => {
+        if (err) {
+            console.error('Error fetching tickets:', err);
+            return res.status(500).json({ message: 'Error fetching tickets' });
+        }
         res.json(results);
     });
 };
 
 // Create a new ticket 
 const createTicket = (req, res) => {
-    console.log(req.body)
     const { subject, description } = req.body;
     const customerId = req.user.id;
 
@@ -71,6 +94,5 @@ const deleteTicket = (req, res) => {
         res.json({ results, message: 'Ticket deleted successfully' });
     });
 };
-
 
 module.exports = { getAllTickets, createTicket, updateTicketStatus, deleteTicket };
