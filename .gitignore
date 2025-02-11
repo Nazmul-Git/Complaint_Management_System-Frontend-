@@ -1,0 +1,28 @@
+# Node modules
+/node_modules/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+
+# npm package-lock and yarn lock files (useful for npm or yarn users)
+package-lock.json
+yarn.lock
+
+# Operating system files
+.DS_Store       # macOS
+Thumbs.db       # Windows
+
+# Build directories
+/dist/
+build/
+
+# IDE/Editor settings (Example: VSCode, JetBrains)
+.vscode/
+.idea/
+
+# Coverage directory from testing
+/coverage/
