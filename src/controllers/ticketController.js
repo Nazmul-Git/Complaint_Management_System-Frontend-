@@ -9,6 +9,12 @@ const getAllTickets = (req, res) => {
     let query = 'SELECT * FROM Tickets';
     const params = [];
 
+    // Add role-based filtering (customer can only see their tickets)
+    if (role === 'customer') {
+        query += ' WHERE customer_id = ?';
+        params.push(id);
+    }
+
     // Add filters based on query parameters
     if (status) {
         if (role === 'customer') {
