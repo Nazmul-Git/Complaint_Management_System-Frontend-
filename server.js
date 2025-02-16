@@ -25,7 +25,6 @@ app.get('/', (req, res) => {
     res.send('Complaint Management System Backend');
 });
 
-// Start server
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

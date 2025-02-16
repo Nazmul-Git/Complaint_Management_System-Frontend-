@@ -3,13 +3,13 @@ const db = require('../config/db');
 // Get all tickets
 const getAllTickets = (req, res) => {
     const { role, id } = req.user;
-    const { status, executive, search } = req.query;
+    const { status, search } = req.query;
 
     // Base query
     let query = 'SELECT * FROM Tickets';
     const params = [];
 
-    // Add role-based filtering (customer can only see their tickets)
+    // Add role-based filtering 
     if (role === 'customer') {
         query += ' WHERE customer_id = ?';
         params.push(id);
@@ -79,25 +79,60 @@ const updateTicketStatus = (req, res) => {
 const deleteTicket = (req, res) => {
     const { id } = req.params;
     const customerId = req.user.id;
-
     const isAdmin = req.user.role === 'admin';
 
-    const query = isAdmin
-        ? 'DELETE FROM Tickets WHERE id = ?'
-        : 'DELETE FROM Tickets WHERE id = ? AND customer_id = ?';
+    // console.log('Ticket ID:', id);
+    // console.log('Customer ID:', customerId);
+    // console.log('Is Admin:', isAdmin);
 
-    const params = isAdmin ? [id] : [id, customerId];
-
-    db.query(query, params, (err, results) => {
+    db.beginTransaction((err) => {
         if (err) {
-            return res.status(500).json({ message: 'Error deleting ticket', error: err });
+            console.error('Error starting transaction:', err);
+            return res.status(500).json({ message: 'Error starting transaction', error: err });
         }
 
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ message: 'Ticket not found or not authorized to delete this ticket' });
-        }
+        // Step 1: Delete all replies associated with the ticket
+        db.query('DELETE FROM Replies WHERE ticket_id = ?', [id], (err, results) => {
+            if (err) {
+                console.error('Error deleting replies:', err);
+                return db.rollback(() => {
+                    res.status(500).json({ message: 'Error deleting replies', error: err });
+                });
+            }
 
-        res.json({ results, message: 'Ticket deleted successfully' });
+            // Step 2: Delete the ticket
+            const query = isAdmin
+                ? 'DELETE FROM Tickets WHERE id = ?'
+                : 'DELETE FROM Tickets WHERE id = ? AND customer_id = ?';
+
+            const params = isAdmin ? [id] : [id, customerId];
+
+            db.query(query, params, (err, results) => {
+                if (err) {
+                    console.error('Error deleting ticket:', err);
+                    return db.rollback(() => {
+                        res.status(500).json({ message: 'Error deleting ticket', error: err });
+                    });
+                }
+
+                if (results.affectedRows === 0) {
+                    return db.rollback(() => {
+                        res.status(404).json({ message: 'Ticket not found or not authorized to delete this ticket' });
+                    });
+                }
+
+                db.commit((err) => {
+                    if (err) {
+                        console.error('Error committing transaction:', err);
+                        return db.rollback(() => {
+                            res.status(500).json({ message: 'Error committing transaction', error: err });
+                        });
+                    }
+
+                    res.json({ results, message: 'Ticket and associated replies deleted successfully' });
+                });
+            });
+        });
     });
 };
 

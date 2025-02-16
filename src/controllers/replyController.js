@@ -2,6 +2,7 @@ const db = require('../config/db');
 
 // Add a reply to a ticket
 const addReply = (req, res) => {
+    console.log(req.body)
     const { ticket_id, message } = req.body;
     const userId = req.user.id;
 
