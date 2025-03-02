@@ -81,9 +81,9 @@ const deleteTicket = (req, res) => {
     const customerId = req.user.id;
     const isAdmin = req.user.role === 'admin';
 
-    // console.log('Ticket ID:', id);
-    // console.log('Customer ID:', customerId);
-    // console.log('Is Admin:', isAdmin);
+    // console.log('ticket id:', id);
+    // console.log('customer id:', customerId);
+    // console.log('is admin:', isAdmin);
 
     db.beginTransaction((err) => {
         if (err) {
